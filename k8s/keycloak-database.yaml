@@ -1,0 +1,102 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: keycloak-database-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/keycloak-database-pv
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: keycloak-database-pvc
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  volumeName: keycloak-database-pv
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-credentials
+type: Opaque
+data:
+  user: a2V5Y2xvYWtfdXNlcg==
+  password: a2V5Y2xvYWtfcGFzc3dvcmQ=
+  database: a2V5Y2xvYWs=
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak-database
+  template:
+    metadata:
+      labels:
+        app: keycloak-database
+        tier: backend
+    spec:
+      containers:
+        - name: keycloak-database
+          image: postgres:9.6.6
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-credentials
+                  key: user
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-credentials
+                  key: password
+
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-credentials
+                  key: database
+
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: keycloak-volume-mount
+              mountPath: /var/lib/postgresql/data
+
+      volumes:
+        - name: keycloak-volume-mount
+          persistentVolumeClaim:
+            claimName: keycloak-database-pvc
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: keycloak-database
+spec:
+  selector:
+    app: keycloak-database
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: LoadBalancer

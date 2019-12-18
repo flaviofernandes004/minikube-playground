@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: hello-node-gatekeeper-configmap
+data:
+  keycloak-gatekeeper.yaml: |+
+    client-id: "hello-world-app"
+    client-secret: "ff9e93d0-10bd-4016-aff9-8a270ad7baa8"
+    discovery-url: "http://192.168.64.9/auth/realms/test"
+    secure-cookie: false
+    enable-default-deny: true
+    enable-refresh-tokens: true
+    enable-encrypted-token: true
+    encryption-key: "97d98b7ff0f957d77a398912aaa1a3a5"
+    listen: ":3000"
+    redirection-url: "http://192.168.64.9"
+    resources:
+      - roles: 
+        - nodejs
+        uri: /*
+      - uri: /public/*
+        white-listed: true
+      - uri: /favicon
+        white-listed: true
+      - uri: /css/*
+        white-listed: true
+      - uri: /img/*
+        white-listed: true
+    upstream-url: "http://hello-node.default.svc.cluster.local:8080"
+    nable-logging: true
+    enable-json-logging: true
+    enable-login-handler: true
+    enable-https-redirection: false
+    enable-metrics: true
+    verbose: true
+    base-uri: /hello-node
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-node-gatekeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-node-gatekeeper
+  template:
+    metadata:
+      labels:
+        app: hello-node-gatekeeper
+    spec:
+      containers:
+      - name: hello-node-gatekeeper
+        image: keycloak/keycloak-gatekeeper
+        ports:
+        - name: http
+          containerPort: 3000
+        volumeMounts:
+        - name: hello-node-gatekeeper-configmap-volume
+          mountPath: /opt/config
+        command: [ "/opt/keycloak-gatekeeper", "--config=/opt/config/keycloak-gatekeeper.yaml" ]
+      volumes:
+      - name: hello-node-gatekeeper-configmap-volume
+        configMap:
+          name: hello-node-gatekeeper-configmap
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-node-gatekeeper
+  labels:
+    app: hello-node-gatekeeper
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+  selector:
+    app: hello-node-gatekeeper
+  type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: hello-node-gatekeeper-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /hello-node/oauth/authorize
+        backend:
+          serviceName: hello-node-gatekeeper
+          servicePort: 80
+      - path: /hello-node/oauth/callback
+        backend:
+          serviceName: hello-node-gatekeeper
+          servicePort: 80
+      - path: /hello-node/.*
+        backend:
+          serviceName: hello-node-gatekeeper
+          servicePort: 80
