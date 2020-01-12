@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: flask-oidc-configmap
+data:
+  client_secrets.json: |+
+    {
+        "web": {
+            "issuer": "http://192.168.64.9/auth/realms/test",
+            "auth_uri": "http://192.168.64.9/auth/realms/test/protocol/openid-connect/auth",
+            "client_id": "flask-oidc-example",
+            "client_secret": "1756a117-0d16-49c9-9416-a1ee123bbf62",
+            "redirect_uris": [
+                "http://192.168.99.100:5000/flask-oidc/*"
+            ],
+            "userinfo_uri": "http://192.168.64.9/auth/realms/test/protocol/openid-connect/userinfo",
+            "token_uri": "http://192.168.64.9/auth/realms/test/protocol/openid-connect/token",
+            "token_introspection_uri": "http://192.168.64.9/auth/realms/test/protocol/openid-connect/token/introspect"
+        }
+    }
+  config.json: |+
+    {
+      "SECRET_KEY": "34475149b920b170cc576f08d7f89da6",
+      "TESTING": true,
+      "DEBUG": true,
+      "OIDC_CLIENT_SECRETS": "config/client_secrets.json",
+      "OIDC_ID_TOKEN_COOKIE_SECURE": false,
+      "OIDC_REQUIRE_VERIFIED_EMAIL": false,
+      "OIDC_SCOPES": ["openid", "email", "profile"],
+      "OIDC_OPENID_REALM": "test",
+      "OIDC_CALLBACK_ROUTE":"/flask-oidc/oidc_callback"
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: flask-oidc
+  name: flask-oidc
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: flask-oidc
+  template:
+    metadata:
+      labels:
+        app: flask-oidc
+    spec:
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      containers:
+      - image: flaviofernandes004/flask-oidc:latest
+        name: flask-oidc
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: flask-oidc-configmap-volume
+          mountPath: /usr/src/config
+      volumes:
+      - name: flask-oidc-configmap-volume
+        configMap:
+          name: flask-oidc-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: flask-oidc
+  name: flask-oidc
+  namespace: default
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: flask-oidc
+  type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: flask-oidc-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /flask-oidc/oauth/authorize
+        backend:
+          serviceName: flask-oidc
+          servicePort: 80
+      - path: /flask-oidc/oidc_callback
+        backend:
+          serviceName: flask-oidc
+          servicePort: 80
+      - path: /flask-oidc/.*
+        backend:
+          serviceName: flask-oidc
+          servicePort: 80
