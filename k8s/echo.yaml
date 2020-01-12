@@ -7,14 +7,14 @@ data:
   keycloak-gatekeeper.yaml: |+
     client-id: "echo-example"
     client-secret: "7a7ab54b-d295-4ac0-8462-b16566649774"
-    discovery-url: "http://192.168.64.9/auth/realms/test"
+    discovery-url: "http://192.168.64.10/auth/realms/test"
     secure-cookie: false
     enable-default-deny: true
     enable-refresh-tokens: true
     enable-encrypted-token: true
     encryption-key: "97d98b7ff0f957d77a398912aaa1a3a5"
     listen: ":3000"
-    redirection-url: "http://192.168.64.9"
+    redirection-url: "http://192.168.64.10"
     resources:
       - uri: /*
         roles:
