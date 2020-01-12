@@ -1,11 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: hello-node-configmap
+data:
+  keycloak-gatekeeper.yaml: |+
+    client-id: "hello-world-app"
+    client-secret: "ff9e93d0-10bd-4016-aff9-8a270ad7baa8"
+    discovery-url: "http://192.168.64.9/auth/realms/test"
+    secure-cookie: false
+    enable-default-deny: true
+    enable-refresh-tokens: true
+    enable-encrypted-token: true
+    encryption-key: "97d98b7ff0f957d77a398912aaa1a3a5"
+    listen: ":3000"
+    redirection-url: "http://192.168.64.9"
+    resources:
+      - roles: 
+        - nodejs
+        uri: /*
+      - uri: /public/*
+        white-listed: true
+      - uri: /favicon
+        white-listed: true
+      - uri: /css/*
+        white-listed: true
+      - uri: /img/*
+        white-listed: true
+    upstream-url: "http://localhost:8080"
+    nable-logging: true
+    enable-json-logging: true
+    enable-login-handler: true
+    enable-https-redirection: false
+    enable-metrics: true
+    verbose: true
+    base-uri: /hello-node
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: hello-node
   name: hello-node
-  namespace: default
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: hello-node
@@ -15,25 +52,58 @@ spec:
         app: hello-node
     spec:
       containers:
+      - name: hello-node-keycloak-gatekeeper
+        image: keycloak/keycloak-gatekeeper
+        ports:
+        - name: http
+          containerPort: 3000
+        volumeMounts:
+        - name: hello-node-configmap-volume
+          mountPath: /opt/config
+        command: [ "/opt/keycloak-gatekeeper", "--config=/opt/config/keycloak-gatekeeper.yaml" ]
       - image: gcr.io/hello-minikube-zero-install/hello-node
         name: hello-node
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
+      volumes:
+      - name: hello-node-configmap-volume
+        configMap:
+          name: hello-node-configmap
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
+  name: hello-node
   labels:
     app: hello-node
-  name: hello-node
-  namespace: default
 spec:
-  externalTrafficPolicy: Cluster
   ports:
-  - port: 8080
-    protocol: TCP
-    targetPort: 8080
+  - name: http
+    port: 80
+    targetPort: 3000
   selector:
     app: hello-node
   type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: hello-node-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /hello-node/oauth/authorize
+        backend:
+          serviceName: hello-node
+          servicePort: 80
+      - path: /hello-node/oauth/callback
+        backend:
+          serviceName: hello-node
+          servicePort: 80
+      - path: /hello-node/.*
+        backend:
+          serviceName: hello-node
+          servicePort: 80

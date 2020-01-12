@@ -1,11 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: echo-configmap
+data:
+  keycloak-gatekeeper.yaml: |+
+    client-id: "echo-example"
+    client-secret: "7a7ab54b-d295-4ac0-8462-b16566649774"
+    discovery-url: "http://192.168.64.9/auth/realms/test"
+    secure-cookie: false
+    enable-default-deny: true
+    enable-refresh-tokens: true
+    enable-encrypted-token: true
+    encryption-key: "97d98b7ff0f957d77a398912aaa1a3a5"
+    listen: ":3000"
+    redirection-url: "http://192.168.64.9"
+    resources:
+      - uri: /*
+        roles:
+          - nodejs
+      - uri: /public/*
+        white-listed: true
+      - uri: /favicon
+        white-listed: true
+      - uri: /css/*
+        white-listed: true
+      - uri: /img/*
+        white-listed: true
+    upstream-url: "http://localhost:80"
+    nable-logging: true
+    enable-json-logging: true
+    enable-login-handler: true
+    enable-https-redirection: false
+    enable-metrics: true
+    verbose: true
+    oauth-uri: /echo/oauth
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: echo
   name: echo
-  namespace: default
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: echo
@@ -14,26 +51,60 @@ spec:
       labels:
         app: echo
     spec:
+      restartPolicy: Always
+      volumes:
+      - name: echo-configmap-volume
+        configMap:
+          name: echo-configmap
       containers:
+      - name: echo-keycloak-gatekeeper
+        image: keycloak/keycloak-gatekeeper
+        ports:
+        - name: http
+          containerPort: 3000
+        volumeMounts:
+        - name: echo-configmap-volume
+          mountPath: /opt/config
+        command: [ "/opt/keycloak-gatekeeper", "--config=/opt/config/keycloak-gatekeeper.yaml" ]
       - image: kennethreitz/httpbin
         name: echo
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
+  name: echo
   labels:
     app: echo
-  name: echo
-  namespace: default
 spec:
-  externalTrafficPolicy: Cluster
   ports:
-  - port: 8080
-    protocol: TCP
-    targetPort: 80
+  - name: http
+    port: 80
+    targetPort: 3000
   selector:
     app: echo
   type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: echo-oauth-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /echo/oauth/authorize
+        backend:
+          serviceName: echo
+          servicePort: 80
+      - path: /echo/oauth/callback
+        backend:
+          serviceName: echo
+          servicePort: 80
+      - path: /echo/.*
+        backend:
+          serviceName: echo
+          servicePort: 80
