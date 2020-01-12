@@ -90,7 +90,7 @@ spec:
   rules:
   - http:
       paths:
-      - path: /flask-oidc/oauth/authorize
+      - path: /flask-oidc/oauth
         backend:
           serviceName: flask-oidc
           servicePort: 80

@@ -96,11 +96,7 @@ spec:
   rules:
   - http:
       paths:
-      - path: /echo/oauth/authorize
-        backend:
-          serviceName: echo
-          servicePort: 80
-      - path: /echo/oauth/callback
+      - path: /echo/oauth
         backend:
           serviceName: echo
           servicePort: 80

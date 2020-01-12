@@ -95,11 +95,7 @@ spec:
   rules:
   - http:
       paths:
-      - path: /hello-node/oauth/authorize
-        backend:
-          serviceName: hello-node
-          servicePort: 80
-      - path: /hello-node/oauth/callback
+      - path: /hello-node/oauth/
         backend:
           serviceName: hello-node
           servicePort: 80
