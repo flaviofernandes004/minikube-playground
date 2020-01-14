@@ -34,7 +34,7 @@ data:
     enable-https-redirection: false
     enable-metrics: true
     verbose: true
-    oauth-uri: /echo/oauth
+    base-uri: /echo
 
 ---
 apiVersion: apps/v1
