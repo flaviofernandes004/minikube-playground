@@ -7,7 +7,7 @@ data:
   keycloak-gatekeeper.yaml: |+
     client-id: "hello-world-app"
     client-secret: "ff9e93d0-10bd-4016-aff9-8a270ad7baa8"
-    discovery-url: "http://$MINIKUBE_IP/auth/realms/test"
+    discovery-url: "http://$MINIKUBE_IP/auth/realms/amestris"
     secure-cookie: false
     enable-default-deny: true
     enable-refresh-tokens: true
@@ -17,8 +17,11 @@ data:
     redirection-url: "http://$MINIKUBE_IP"
     resources:
       - roles: 
-        - nodejs
-        uri: /*
+        - x-user
+        uri: /hello-node/*
+      - roles: 
+        - x-admin
+        uri: /hello-node/admin/*
       - uri: /public/*
         white-listed: true
       - uri: /favicon
