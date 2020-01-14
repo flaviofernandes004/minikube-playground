@@ -28,7 +28,7 @@ data:
       - uri: /img/*
         white-listed: true
     upstream-url: "http://localhost:80"
-    nable-logging: true
+    enable-logging: true
     enable-json-logging: true
     enable-login-handler: true
     enable-https-redirection: false
