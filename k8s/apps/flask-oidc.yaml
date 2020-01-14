@@ -7,16 +7,16 @@ data:
   client_secrets.json: |+
     {
         "web": {
-            "issuer": "http://192.168.64.10/auth/realms/test",
-            "auth_uri": "http://192.168.64.10/auth/realms/test/protocol/openid-connect/auth",
+            "issuer": "http://$MINIKUBE_IP/auth/realms/test",
+            "auth_uri": "http://$MINIKUBE_IP/auth/realms/test/protocol/openid-connect/auth",
             "client_id": "flask-oidc-example",
             "client_secret": "1756a117-0d16-49c9-9416-a1ee123bbf62",
             "redirect_uris": [
-                "http://192.168.64.10/flask-oidc/*"
+                "http://$MINIKUBE_IP/flask-oidc/*"
             ],
-            "userinfo_uri": "http://192.168.64.10/auth/realms/test/protocol/openid-connect/userinfo",
-            "token_uri": "http://192.168.64.10/auth/realms/test/protocol/openid-connect/token",
-            "token_introspection_uri": "http://192.168.64.10/auth/realms/test/protocol/openid-connect/token/introspect"
+            "userinfo_uri": "http://$MINIKUBE_IP/auth/realms/test/protocol/openid-connect/userinfo",
+            "token_uri": "http://$MINIKUBE_IP/auth/realms/test/protocol/openid-connect/token",
+            "token_introspection_uri": "http://$MINIKUBE_IP/auth/realms/test/protocol/openid-connect/token/introspect"
         }
     }
   config.json: |+
