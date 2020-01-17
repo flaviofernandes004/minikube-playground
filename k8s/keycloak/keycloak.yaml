@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: keycloak
-        image: jboss/keycloak
+        image: flaviofernandes004/keycloak-with-metrics
         env:
         - name: KEYCLOAK_USER
           value: "admin"
@@ -49,6 +49,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path:   "/auth/realms/master/metrics"
+      prometheus.io/port:   '8080'
   name: keycloak
   labels:
     app: keycloak

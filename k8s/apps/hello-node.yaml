@@ -75,6 +75,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path:   /hello-node/oauth/metrics
+      prometheus.io/port:   '3000'
   name: hello-node
   labels:
     app: hello-node
