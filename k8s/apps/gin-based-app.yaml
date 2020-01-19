@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gin-based-app
+  name: gin-based-app
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: gin-based-app
+  template:
+    metadata:
+      labels:
+        app: gin-based-app
+    spec:
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      containers:
+      - image: flaviofernandes004/go-proj-template
+        name: gin-based-app
+        imagePullPolicy: Always
+        command: ["/usr/bin/dumb-init", "--", "/opt/go-project-template/bin/go-project-template", 'server','gin']
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 2
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /api/ready
+            port: 8080
+          initialDelaySeconds: 2
+          periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path:   /metrics
+      prometheus.io/port:   '3000'
+  labels:
+    app: gin-based-app
+  name: gin-based-app
+  namespace: default
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: gin-based-app
+  type: LoadBalancer
