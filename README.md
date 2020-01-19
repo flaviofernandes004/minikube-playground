@@ -1,5 +1,5 @@
-# sso-gateway
-This is a playground setup to play around with Keycloak, OAuth2, and proxies (Keycloak-Gatekeeper for now).
+# Minikube Playground
+A playground to play with Identity Providers, OAuth2, metrics, and whatnot.
 
 
 ## Dependencies
